@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+</head>
+
+<style>
+    h1
+    {
+        color:dodgerblue;
+        text-align: center;
+    }
+
+    input[type="text"], textarea
+    {
+        background-color : white; 
+    }
+
+    .main_table
+    {
+        border:1px solid white;
+        text-align: center;
+        font-size: 200%;
+        border-spacing: 10px;
+    }
+
+    .input_label
+    {
+        color:white;
+        text-align: right;
+        font-size: 200%;
+    }
+
+    .submit_button
+    {
+        text-align: center;
+        font-size: 200%;
+    }
+
+    .central_content
+    {
+        text-align: center;
+        font-size: 200%;
+        align-content: center;
+    }
+</style>
+
+<body style="background-color:black;" text='white'>
+
+<div id='tabIconsView' class='central_content'>
+    <table>
+        <tr>
+            <td>
+                <input id='voteAddTabIcon' type='image' src='images/vote_or_add.png' onclick="setupViews('TAB_VOTE_ADD')" style='display:none;'>
+                <input id='voteAddTabIcon_selected' type='image' src='images/vote_or_add_selected.png'>
+            </td>
+            <td>
+                <input id='overviewTabIcon' type='image' src='images/list_overview.png' onclick="setupViews('TAB_OVERVIEW')">
+                <input id='overviewTabIcon_selected' type='image' src='images/list_overview_selected.png' style='display:none;'>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<p>
+
+<div id='voteItemView' class='central_content'>
+    <label class='central_content' id="itemToVoteLabel">Carregando...</label>
+    <p>
+    <div id='voteImages'>
+        <input type='image' value='0' onclick='onVotePressed(0)' src='images/vote_zero.png'>
+        __
+        <input type='image' value='1' onclick='onVotePressed(1)' src='images/vote_one.png' >
+        __
+        <input type='image' value='3' onclick='onVotePressed(3)' src='images/vote_three.png'>
+    </div>
+</div>
+
+<div id='newItemView' style='display:none;'>
+    <label class='input_label'>Artista/Banda:</label> <input type="text" id="inputGroup">
+    </br>
+    <label class='input_label'>Música:</label> <input type="text" id="inputItem">
+    <p>
+    <input type='button' class='submit_button' value='Adicionar' onclick='onAddItemPressed()'>
+</div>
+
+<div id='itemsOverview' style='display:none;'>
+    <table id='itemsOverviewTable' class='main_table'>
+        <tr>
+            <th>Música</th>
+            <th>Total</th>
+        </tr>
+    </table>
+</div>
+
+<script src='utils.js'></script>
+<script src='addItemView.js'></script>
+<script src='itemsOverview.js'></script>
+<script src='voteItemView.js'></script>
+
+<script>
+window.onload = function()
+{
+    const itemToVote = <%- JSON.stringify(parameters.itemToVote) %>;
+    const currentTab = itemToVote ? 'TAB_VOTE_ADD' : 'TAB_OVERVIEW';
+    setupViews(currentTab);
+}
+
+function setupViews(currentTab)
+{
+    clearAllViews();
+    var currentView = 'itemsOverview';
+
+    if (currentTab == 'TAB_VOTE_ADD')
+    {
+        const itemToVote = <%- JSON.stringify(parameters.itemToVote) %>;
+        currentView = itemToVote ? 'voteItemView' : 'newItemView';
+        
+        if (currentView == 'voteItemView')
+            setupVoteItemView(itemToVote);
+    }
+    else
+    {
+        const allItems = <%- JSON.stringify(parameters.allItems) %>;
+        const allUsers = <%- JSON.stringify(parameters.allUsers) %>;
+        setupItemsOverview(allItems, allUsers);
+    }
+
+    enableView(currentView);
+    setupTabIcons(currentView);
+}
+
+function setupTabIcons(currentView)
+{
+    enableView('tabIconsView');
+    if (currentView == 'itemsOverview')
+    {
+        enableView('voteAddTabIcon');
+        enableView('overviewTabIcon_selected');
+    }
+    else
+    {
+        enableView('voteAddTabIcon_selected');
+        enableView('overviewTabIcon');
+    }
+}
+
+function enableView(viewItem)
+{
+    document.getElementById(viewItem).style.display = 'block';
+}
+
+function clearAllViews()
+{
+    var allElementsId =
+    [
+        'tabIconsView', 'voteItemView', 'newItemView', 'itemsOverview',
+        'voteAddTabIcon', 'voteAddTabIcon_selected', 'overviewTabIcon', 'overviewTabIcon_selected'
+    ];
+
+    allElementsId.forEach(item =>
+    {
+        document.getElementById(item).style.display = 'none';
+    });
+}
+
+function onVotePressed(score)
+{
+    const itemToVote = <%- JSON.stringify(parameters.itemToVote) %>;
+    voteItem(itemToVote, score);
+}
+</script>
+
+</body>
+</html>

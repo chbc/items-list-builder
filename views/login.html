@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+</head>
+
+<style>
+    input[type="text"], textarea
+    {
+        background-color : white; 
+    }
+
+    .team
+    {
+        color:dodgerblue;
+        text-align: center;
+        font-size: 500%;
+    }
+
+    .input_label
+    {
+        color:white;
+        text-align: right;
+        font-size: 200%;
+    }
+
+    .submit_button
+    {
+        text-align: center;
+        font-size: 200%;
+    }
+</style>
+
+<body style='background-color:black;' text='white'>
+
+<div class='team'><%= parameters.teamName %></div>
+
+<p>
+
+<div>
+    <label class='input_label' id='labelName'>Nome:</label>
+    <input type='text' id='user'>
+    <p>
+    <input type='button' class='submit_button' value='Entrar' onclick='onLoginPressed()'>
+</div>
+
+<script src='utils.js'></script>
+<script>
+function onLoginPressed()
+{
+    var user = document.getElementById('user').value;
+    if (user == '')
+        alert('Nome vazio!');
+    else
+    {
+        var parameters = 'user=' + user;
+        makeRequest('login', parameters);
+    }
+}
+</script>
+
+</body>
+</html>

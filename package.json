@@ -1,0 +1,30 @@
+{
+  "name": "items-list-builder",
+  "version": "1.0.0",
+  "description": "Build lists cooperatively",
+  "main": "server.js",
+  "dependencies": {
+    "@google-cloud/firestore": "^5.0.2",
+    "cookie-parser": "^1.4.6",
+    "ejs": "^3.1.6",
+    "express": "^4.17.3"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chbc/items-list-builder.git"
+  },
+  "keywords": [
+    "items",
+    "list"
+  ],
+  "author": "Carlos Henrique",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/chbc/items-list-builder/issues"
+  },
+  "homepage": "https://github.com/chbc/items-list-builder#readme"
+}
