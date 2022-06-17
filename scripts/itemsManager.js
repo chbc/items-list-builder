@@ -40,10 +40,5 @@ ItemsManager.prototype.resetAllVotes = function (teamId, item)
 	this.dbManager.resetAllVotes(teamId, item);
 }
 
-ItemsManager.prototype.refreshItems = async function (teamId)
-{
-    await this.dbManager.refreshItems(teamId);
-}
-
 var ItemsManagerInstance = new ItemsManager();
 exports.getItemsManager = function () { return ItemsManagerInstance; }

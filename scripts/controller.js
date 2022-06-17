@@ -15,7 +15,7 @@ Controller.prototype.handleHomePage = async function (request, response)
 {
 	var resultPage = null;
 
-	var teamId = this.teamsManager.handleHomeRequest(request, response);
+	var teamId = this.teamsManager.getTeamIdFromRequest(request, response);
 	if (!teamId)
 	{
 		resultPage = this.viewsManager.getErrorPage('Team not found!');
@@ -24,12 +24,8 @@ Controller.prototype.handleHomePage = async function (request, response)
 	{
 		var user = request.cookies['user'];
 
-		await this.teamsManager.refreshTeam(teamId);
-
 		if (this.usersManager.userExists(user))
 		{
-			await this.itemsManager.refreshItems(teamId);
-
 			var itemToVote = this.itemsManager.getItemToVote(user);
 			var allUsers = this.usersManager.getAllUsers();
 			var allItems = this.itemsManager.getAllItems();

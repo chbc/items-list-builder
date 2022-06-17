@@ -43,13 +43,13 @@ function initializeTable(table)
         header.deleteCell(-1);
 }
 
-function getScoreFromUser(scoreList, user)
+function getScoreFromUser(scoreList, inputUser)
 {
     var result = 0;
 
     scoreList.some(item =>
     {
-        if (item.name == user)
+        if (item.user == inputUser)
         {
             result = item.score;
             return true;

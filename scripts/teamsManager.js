@@ -6,7 +6,7 @@ var TeamsManager = function ()
     this.dbManager = DbManager.getDbManager();
 }
 
-TeamsManager.prototype.handleHomeRequest = function (request, response)
+TeamsManager.prototype.getTeamIdFromRequest = function (request, response)
 {
     var teamId = request.cookies['teamId'];
     if (!teamId)
@@ -26,11 +26,6 @@ TeamsManager.prototype.getTeamName = function ()
 TeamsManager.prototype.removeUser = function (teamId, user)
 {
     this.dbManager.removeUser(teamId, user);
-}
-
-TeamsManager.prototype.refreshTeam = async function (teamId)
-{
-    await this.dbManager.refreshTeam(teamId);
 }
 
 var TeamsManagerInstance = new TeamsManager();
