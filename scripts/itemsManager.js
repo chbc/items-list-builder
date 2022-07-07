@@ -10,21 +10,12 @@ ItemsManager.prototype.addItem = async function (teamId, user, item)
 	await this.dbManager.addItem(teamId, user, item);
 }
 
-ItemsManager.prototype.getItemToVote = function (user)
+ItemsManager.prototype.voteItem = async function (teamId, user, itemName, score)
 {
-	return this.dbManager.getItemToVote(user);
+	await this.dbManager.voteItem(teamId, user, itemName, score);
 }
 
-ItemsManager.prototype.getAllItems = function ()
-{
-	return this.dbManager.getAllItems();
-}
-
-ItemsManager.prototype.voteItem = async function (user, itemName, score)
-{
-	await this.dbManager.voteItem(user, itemName, score);
-}
-
+/*
 ItemsManager.prototype.resetVote = function (teamId, user, item)
 {
 	this.dbManager.resetVote(teamId, user, item);
@@ -39,6 +30,7 @@ ItemsManager.prototype.resetAllVotes = function (teamId, item)
 {
 	this.dbManager.resetAllVotes(teamId, item);
 }
+*/
 
 var ItemsManagerInstance = new ItemsManager();
 exports.getItemsManager = function () { return ItemsManagerInstance; }

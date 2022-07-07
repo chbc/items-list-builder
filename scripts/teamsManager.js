@@ -18,15 +18,18 @@ TeamsManager.prototype.getTeamIdFromRequest = function (request, response)
     return teamId;
 }
 
-TeamsManager.prototype.getTeamName = function ()
+TeamsManager.prototype.getTeamName = async function (teamId)
 {
+    await this.dbManager.refreshTeam(teamId);
     return this.dbManager.getTeamName();
 }
 
+/*
 TeamsManager.prototype.removeUser = function (teamId, user)
 {
     this.dbManager.removeUser(teamId, user);
 }
+*/
 
 var TeamsManagerInstance = new TeamsManager();
 exports.getTeamsManager = function () { return TeamsManagerInstance; }

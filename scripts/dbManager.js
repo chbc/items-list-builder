@@ -1,5 +1,17 @@
+const MySQL = require('mysql2/promise');
+
 var DbManager = function()
 {
+    // XXX guardar num mapa tendo o teamId como chave
+    this.team = null;
+    this.users = null;
+    this.scores = null;
+    this.items = null;
+    this.itemsToVote = null; // XXX armazenar todos
+    this.homeData = null;
+    this.isDirty = true;
+
+/*
     this.team = 
     {
         id : '123', name : 'The Tributes',
@@ -23,94 +35,193 @@ var DbManager = function()
         {name : "Deep Purple - Smoke On The Water", totalScore : 5, scoreList : [{user : 'Henrique', score : 1}, {user : 'Dodô', score : 1}, {user : 'Matheus', score : 3}]},
         {name : "Limp Bizkit - My Way", totalScore : 6, scoreList : [{user : 'Henrique', score : 3}, {user : 'Matheus', score : 3}]},
         {name : "Soundgarden - Black hole sun", totalScore : 6, scoreList : [{user : 'Henrique', score : 3}, {user : 'Matheus', score : 3}]},
-	{name : "Green Day - Basket Case", totalScore : 3, scoreList : [{user : 'Henrique', score : 3}]},
+	    {name : "Green Day - Basket Case", totalScore : 3, scoreList : [{user : 'Henrique', score : 3}]},
     	{name : "Depeche Mode - Enjoy The Silence", totalScore : 3, scoreList : [{user : 'Henrique', score : 3}]},
-	{name : "Pearl Jam - Jeremy", totalScore : 3, scoreList : [{user : 'Henrique', score : 3}]},
-	{name : "Pearl Jam - Better Man", totalScore : 3, scoreList : [{user : 'Henrique', score : 3}]},
+	    {name : "Pearl Jam - Jeremy", totalScore : 3, scoreList : [{user : 'Henrique', score : 3}]},
+	    {name : "Pearl Jam - Better Man", totalScore : 3, scoreList : [{user : 'Henrique', score : 3}]},
     	{name : "Oasis - Don't Go Away", totalScore : 3, scoreList : [{user : 'Henrique', score : 3}]},
-	{name : "Oasis - Don't Look Back In Anger", totalScore : 3, scoreList : [{user : 'Henrique', score : 3}]},
-	{name : "The Strokes - Reptilla", totalScore : 3, scoreList : [{user : 'Henrique', score : 3}]},
+	    {name : "Oasis - Don't Look Back In Anger", totalScore : 3, scoreList : [{user : 'Henrique', score : 3}]},
+	    {name : "The Strokes - Reptilla", totalScore : 3, scoreList : [{user : 'Henrique', score : 3}]},
     	{name : "Millencolin - No Cigar", totalScore : 3, scoreList : [{user : 'Henrique', score : 3}]},
-	{name : "Silverchair - Freak", totalScore : 3, scoreList : [{user : 'Henrique', score : 3}]}
+	    {name : "Silverchair - Freak", totalScore : 3, scoreList : [{user : 'Henrique', score : 3}]}
     ];
+*/
+
+    this.conn = null;
+    this.URL = 'mysql://henrique:henrique@localhost:3306/coop_items_db';
 }
 
-DbManager.prototype.userExists = function (user)
+DbManager.prototype.getHomeData = async function (user, teamId)
 {
-	return this.team.users.includes(user);
-}
-
-DbManager.prototype.addUsersIfNotExists = function (response, teamId, user)
-{
-	response.cookie('user', user);
-
-	if (!this.team.users.includes(user))
+    if (this.isDirty)
     {
-        this.team.users.push(user);
+        await this.refreshAllData(user, teamId);
+        this.isDirty = false;
+    }
+
+    return this.homeData;
+}
+
+DbManager.prototype.refreshAllData = async function (user, teamId)
+{
+    this.team = null;
+    this.users = null;
+    this.scores = null;
+    this.items = null;
+    this.itemsToVote = null;
+    this.homeData = null;
+
+    await this.refreshTeam(teamId);
+    await this.refreshUsers(teamId);
+    await this.refreshScores(teamId);
+    await this.refreshItems(teamId);
+    await this.refreshitemsToVote(teamId, user);
+
+    this.createHomeData();
+}
+
+DbManager.prototype.createHomeData = function ()
+{
+    this.homeData = {
+        itemToVote : this.getItemToVote(),
+        allUsers : this.users,
+        teamName : this.team.name,
+        allItems : []
+    };
+
+    this.items.forEach(inputItem => {
+        var item = {
+            name : inputItem.name,
+            totalScore : inputItem.totalScore,
+            scoreList : this.createScoreList(inputItem.scoreListId)
+        }
+
+        this.homeData.allItems.push(item);
+    });
+
+    this.sortItems();
+}
+
+DbManager.prototype.setDirty = function ()
+{
+    this.isDirty = true;
+}
+
+DbManager.prototype.refreshTeam = async function (teamId)
+{
+    if (!this.team)
+    {
+        const sql = `CALL GetTeam("${teamId}")`;
+        const result = await this.execute(sql);
+
+        this.team = {id : teamId, name : result[0].name};
     }
 }
 
-DbManager.prototype.addItem = function (inputUser, itemName)
+DbManager.prototype.refreshUsers = async function (teamId)
 {
-    var scoreList = [{user : inputUser, score : 3}];
-    var entry =
+    if (!this.users || !this.checkTeam(teamId))
     {
-        id : itemId,
-        name : itemName,
-        scoreList : scoreList,
-        totalScore : 3
-    };
+        const sql = `CALL GetUsers("${teamId}")`;
+        const result = await this.execute(sql);
 
-    this.itemsDb.push(entry);
+        this.users = [];
+        result.forEach((item) =>{
+            this.users.push(item.name);
+        });
+    }
 }
 
-DbManager.prototype.getItemToVote = function (inputUser)
+DbManager.prototype.refreshScores = async function (teamId)
 {
-    var result = null;
-
-    this.itemsDb.some(function (item)
+    if (!this.scores)
     {
-        var userVoted = false;
-        item.scoreList.some(function (scoreItem)
-        {
-            if (inputUser == scoreItem.user)
-            {
-                userVoted = true;
-                return true;
-            }
-        });
+        const sql = `CALL GetScores("${teamId}")`;
+        this.scores = await this.execute(sql);
+    }
+}
 
-        if (!userVoted)
-        {
-            result = item.name;
-            return true;
-        }
+DbManager.prototype.refreshItems = async function (teamId)
+{
+    if (!this.items)
+    {
+        const sql = `CALL GetItems("${teamId}")`;
+        this.items = await this.execute(sql);
+    }
+}
+
+DbManager.prototype.refreshitemsToVote = async function (teamId, user)
+{
+    if (!this.itemsToVote)
+    {
+        const sql = `CALL GetitemsToVote("${teamId}", "${user}")`;
+        const result = await this.execute(sql);
+        
+        this.itemsToVote = [];
+        result.forEach((item) =>{
+            this.itemsToVote.push(item.name);
+        });
+    }
+}
+
+DbManager.prototype.addUsersIfNotExists = async function (response, teamId, user)
+{
+    response.cookie('user', user);
+
+    if (!this.userExists(user))
+    {
+        const sql = `CALL AddUserIfNotExists("${teamId}", "${user}")`;
+        await this.execute(sql);
+
+        this.users = null;
+    }
+
+    this.isDirty = true;
+}
+
+DbManager.prototype.addItem = async function (teamId, user, item)
+{
+    const sql = `CALL AddItem("${teamId}", "${user}", "${item}")`;
+    await this.execute(sql);
+    this.isDirty = true;
+}
+
+DbManager.prototype.voteItem = async function (teamId, user, itemName, score)
+{
+    const sql = `CALL VoteItem("${teamId}", "${user}", "${itemName}", "${score}")`;
+    await this.execute(sql);
+    this.isDirty = true;
+}
+
+DbManager.prototype.execute = async function (sql)
+{
+    if (!this.conn)
+        this.conn = await MySQL.createConnection(this.URL);
+
+    const [result] = await this.conn.query(sql);
+
+    return (result ? result[0] : null);
+}
+
+DbManager.prototype.createScoreList = function (id)
+{
+    var result = [];
+    this.scores.forEach((item) => {
+        if (item.scoreListId == id)
+            result.push({user : item.userName, score : item.score});
     });
 
     return result;
 }
 
-DbManager.prototype.getAllUsers = function ()
+DbManager.prototype.checkTeam = function (teamId)
 {
-    return this.team.users;
+    return ((this.team) && (this.team.id == teamId));
 }
 
-DbManager.prototype.getAllItems = function ()
+DbManager.prototype.userExists = function (user)
 {
-    this.itemsDb.sort((itemA, itemB) =>
-    {
-        return (itemB.totalScore - itemA.totalScore);
-    });
-
-    return this.itemsDb;
-}
-
-DbManager.prototype.voteItem = function (inputUser, itemName, score)
-{
-    var item = this.itemsDb.find(item => item.name == itemName);
-    item.totalScore += score;
-    const entry = {user : inputUser, score : score};
-    item.scoreList.push(entry);
+	return this.users.includes(user);
 }
 
 DbManager.prototype.getTeamName = function ()
@@ -118,6 +229,24 @@ DbManager.prototype.getTeamName = function ()
     return this.team.name;
 }
 
+DbManager.prototype.sortItems = function ()
+{
+    this.homeData.allItems.sort((itemA, itemB) =>
+    {
+        return (itemB.totalScore - itemA.totalScore);
+    });
+}
+
+DbManager.prototype.getItemToVote = function ()
+{
+    var result = null;
+    if (this.itemsToVote && (this.itemsToVote.length > 0))
+        result = this.itemsToVote[0];
+
+    return result;
+}
+
+/*
 DbManager.prototype.resetVote = function (teamId, user, item)
 {
     const size = this.itemsDb.length;
@@ -197,6 +326,7 @@ DbManager.prototype.removeItem = function (teamId, item)
         }
     }
 }
+*/
 
 var DbManagerInstance = new DbManager();
 exports.getDbManager = function () { return DbManagerInstance; }

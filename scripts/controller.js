@@ -2,6 +2,7 @@ var ViewsManager = require('./viewsManager');
 var UsersManager = require('./usersManager');
 var ItemsManager = require('./itemsManager')
 var TeamsManager = require('./teamsManager');
+const DbManager = require('./dbManager');
 
 var Controller = function()
 {
@@ -9,33 +10,38 @@ var Controller = function()
 	this.usersManager = UsersManager.getUsersManager();
 	this.itemsManager = ItemsManager.getItemsManager();
 	this.teamsManager = TeamsManager.getTeamsManager();
+	this.dbManager = DbManager.getDbManager();
 }
 
 Controller.prototype.handleHomePage = async function (request, response)
 {
 	var resultPage = null;
+	var user = null;
 
 	var teamId = this.teamsManager.getTeamIdFromRequest(request, response);
-	if (!teamId)
+	if (teamId)
 	{
-		resultPage = this.viewsManager.getErrorPage('Team not found!');
+		user = request.cookies['user'];
+		if (user)
+		{
+			const userExists = await this.usersManager.userExists(teamId, user);
+			if (userExists)
+			{
+				var homeData = await this.dbManager.getHomeData(user, teamId);
+				resultPage = this.viewsManager.getHomePage(user, homeData.itemToVote, homeData.allUsers, homeData.allItems);
+			}
+		}
+		
+		if (!resultPage)
+		{
+			this.dbManager.setDirty();
+			const teamName = await this.teamsManager.getTeamName(teamId);
+			resultPage = this.viewsManager.getLoginPage(teamName);
+		}
 	}
 	else
 	{
-		var user = request.cookies['user'];
-
-		if (this.usersManager.userExists(user))
-		{
-			var itemToVote = this.itemsManager.getItemToVote(user);
-			var allUsers = this.usersManager.getAllUsers();
-			var allItems = this.itemsManager.getAllItems();
-			resultPage = this.viewsManager.getHomePage(user, itemToVote, allUsers, allItems);
-		}
-		else
-		{
-			var teamName = this.teamsManager.getTeamName();
-			resultPage = this.viewsManager.getLoginPage(teamName);
-		}
+		resultPage = this.viewsManager.getErrorPage('Equipe não existe!');
 	}
 
 	return resultPage;
@@ -61,9 +67,10 @@ Controller.prototype.addItem = async function (request)
 Controller.prototype.voteItem = async function (request)
 {
 	const user = request.cookies['user'];
+	var teamId = request.cookies['teamId'];
 	const itemName = request.body.item;
 	const score = parseInt(request.body.score);
-	await this.itemsManager.voteItem(user, itemName, score);
+	await this.itemsManager.voteItem(teamId, user, itemName, score);
 }
 
 Controller.prototype.getErrorPage = function (errorMessage)
@@ -71,6 +78,7 @@ Controller.prototype.getErrorPage = function (errorMessage)
 	return this.viewsManager.getErrorPage(errorMessage);
 }
 
+/*
 Controller.prototype.resetVote = function (request)
 {
 	const teamId = request.body.teamId;
@@ -100,6 +108,7 @@ Controller.prototype.resetAllVotes = function (request)
 	const item = request.body.item;
 	this.itemsManager.resetAllVotes(teamId, item);
 }
+*/
 
 var ControllerInstance = new Controller();
 exports.getController = function () { return ControllerInstance; }
