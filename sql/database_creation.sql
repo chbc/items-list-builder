@@ -36,9 +36,9 @@ CREATE TABLE IF NOT EXISTS scores
     teamId VARCHAR(4) NOT NULL,
     userName VARCHAR(20) NOT NULL,
     score TINYINT UNSIGNED NOT NULL,
-    FOREIGN KEY(scoreListId) REFERENCES scoreLists(id),
+    FOREIGN KEY(scoreListId) REFERENCES scoreLists(id) ON DELETE CASCADE,
     FOREIGN KEY(teamId) REFERENCES teams(id),
-    FOREIGN KEY(userName) REFERENCES users(name)
+    FOREIGN KEY(userName) REFERENCES users(name) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS items
@@ -48,5 +48,6 @@ CREATE TABLE IF NOT EXISTS items
     scoreListId MEDIUMINT UNSIGNED,
     PRIMARY KEY(name, teamId),
     FOREIGN KEY(teamId) REFERENCES teams(id),
-    FOREIGN KEY(scoreListId) REFERENCES scoreLists(id)
+    FOREIGN KEY(scoreListId) REFERENCES scoreLists(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
