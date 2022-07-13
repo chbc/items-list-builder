@@ -1,4 +1,4 @@
-USE coop_items_db;
+USE heroku_883d6b17aef68b8;
 
 DROP TABLE IF EXISTS items;
 DROP TABLE IF EXISTS scores;

@@ -47,8 +47,15 @@ var DbManager = function()
     ];
 */
 
-    this.conn = null;
-    this.URL = 'mysql://henrique:henrique@localhost:3306/coop_items_db';
+    // const LOCAL_URL = 'mysql://henrique:henrique@localhost:3306/coop_items_db';
+
+    this.CONNECTION_LIMIT = 10;
+    this.HOST = process.env.HOST ? process.env.HOST : 'localhost';
+    this.USER = process.env.USER ? process.env.USER : 'henrique';
+    this.PASSWORD = process.env.PASSWORD ? process.env.PASSWORD : 'henrique';
+    this.DATABASE = process.env.DATABASE ? process.env.DATABASE : 'coop_items_db';
+
+    this.pool = null;
 }
 
 DbManager.prototype.getHomeData = async function (user, teamId)
@@ -195,11 +202,18 @@ DbManager.prototype.voteItem = async function (teamId, user, itemName, score)
 
 DbManager.prototype.execute = async function (sql)
 {
-    if (!this.conn)
-        this.conn = await MySQL.createConnection(this.URL);
+    if (!this.pool)
+    {
+        this.pool = MySQL.createPool({
+            connectionLimit : this.CONNECTION_LIMIT,
+            host : this.HOST,
+            user : this.USER,
+            password : this.PASSWORD,
+            database : this.DATABASE
+        });
+    }
 
-    const [result] = await this.conn.query(sql);
-
+    const [result] = await this.pool.query(sql);
     return (result ? result[0] : null);
 }
 
