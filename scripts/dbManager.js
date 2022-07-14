@@ -7,9 +7,8 @@ var DbManager = function()
     this.users = null;
     this.scores = null;
     this.items = null;
-    this.itemsToVote = null; // XXX armazenar todos
+    this.itemToVote = null; // XXX armazenar todos
     this.homeData = null;
-    this.isDirty = true;
 
 /*
     this.team = 
@@ -49,7 +48,7 @@ var DbManager = function()
 
     // const LOCAL_URL = 'mysql://henrique:henrique@localhost:3306/coop_items_db';
 
-    this.CONNECTION_LIMIT = 10;
+    this.CONNECTION_LIMIT = 20;
     this.HOST = process.env.HOST ? process.env.HOST : 'localhost';
     this.USER = process.env.USER ? process.env.USER : 'henrique';
     this.PASSWORD = process.env.PASSWORD ? process.env.PASSWORD : 'henrique';
@@ -60,12 +59,7 @@ var DbManager = function()
 
 DbManager.prototype.getHomeData = async function (user, teamId)
 {
-    if (this.isDirty)
-    {
-        await this.refreshAllData(user, teamId);
-        this.isDirty = false;
-    }
-
+    await this.refreshAllData(user, teamId);
     return this.homeData;
 }
 
@@ -75,14 +69,14 @@ DbManager.prototype.refreshAllData = async function (user, teamId)
     this.users = null;
     this.scores = null;
     this.items = null;
-    this.itemsToVote = null;
+    this.itemToVote = null;
     this.homeData = null;
 
     await this.refreshTeam(teamId);
     await this.refreshUsers(teamId);
     await this.refreshScores(teamId);
     await this.refreshItems(teamId);
-    await this.refreshitemsToVote(teamId, user);
+    await this.refreshItemToVote(teamId, user);
 
     this.createHomeData();
 }
@@ -90,7 +84,7 @@ DbManager.prototype.refreshAllData = async function (user, teamId)
 DbManager.prototype.createHomeData = function ()
 {
     this.homeData = {
-        itemToVote : this.getItemToVote(),
+        itemToVote : this.itemToVote,
         allUsers : this.users,
         teamName : this.team.name,
         allItems : []
@@ -109,95 +103,63 @@ DbManager.prototype.createHomeData = function ()
     this.sortItems();
 }
 
-DbManager.prototype.setDirty = function ()
-{
-    this.isDirty = true;
-}
-
 DbManager.prototype.refreshTeam = async function (teamId)
 {
-    if (!this.team)
-    {
-        const sql = `CALL GetTeam("${teamId}")`;
-        const result = await this.execute(sql);
+    const sql = `CALL GetTeam("${teamId}")`;
+    const result = await this.execute(sql);
 
-        this.team = {id : teamId, name : result[0].name};
-    }
+    this.team = {id : teamId, name : result[0].name};
 }
 
 DbManager.prototype.refreshUsers = async function (teamId)
 {
-    if (!this.users || !this.checkTeam(teamId))
-    {
-        const sql = `CALL GetUsers("${teamId}")`;
-        const result = await this.execute(sql);
+    const sql = `CALL GetUsers("${teamId}")`;
+    const result = await this.execute(sql);
 
-        this.users = [];
-        result.forEach((item) =>{
-            this.users.push(item.name);
-        });
-    }
+    this.users = [];
+    result.forEach((item) =>{
+        this.users.push(item.name);
+    });
 }
 
 DbManager.prototype.refreshScores = async function (teamId)
 {
-    if (!this.scores)
-    {
-        const sql = `CALL GetScores("${teamId}")`;
-        this.scores = await this.execute(sql);
-    }
+    const sql = `CALL GetScores("${teamId}")`;
+    this.scores = await this.execute(sql);
 }
 
 DbManager.prototype.refreshItems = async function (teamId)
 {
-    if (!this.items)
-    {
-        const sql = `CALL GetItems("${teamId}")`;
-        this.items = await this.execute(sql);
-    }
+    const sql = `CALL GetItems("${teamId}")`;
+    this.items = await this.execute(sql);
 }
 
-DbManager.prototype.refreshitemsToVote = async function (teamId, user)
+DbManager.prototype.refreshItemToVote = async function (teamId, user)
 {
-    if (!this.itemsToVote)
-    {
-        const sql = `CALL GetitemsToVote("${teamId}", "${user}")`;
-        const result = await this.execute(sql);
-        
-        this.itemsToVote = [];
-        result.forEach((item) =>{
-            this.itemsToVote.push(item.name);
-        });
-    }
+    const sql = `CALL GetItemToVote("${teamId}", "${user}")`;
+    const result = await this.execute(sql);
+
+    this.itemToVote = (result && result.length > 0) ? result[0].name : null;
 }
 
 DbManager.prototype.addUsersIfNotExists = async function (response, teamId, user)
 {
     response.cookie('user', user);
 
-    if (!this.userExists(user))
-    {
-        const sql = `CALL AddUserIfNotExists("${teamId}", "${user}")`;
-        await this.execute(sql);
-
-        this.users = null;
-    }
-
-    this.isDirty = true;
+    const sql = `CALL AddUserIfNotExists("${teamId}", "${user}")`;
+    await this.execute(sql);
 }
 
 DbManager.prototype.addItem = async function (teamId, user, item)
 {
     const sql = `CALL AddItem("${teamId}", "${user}", "${item}")`;
     await this.execute(sql);
-    this.isDirty = true;
 }
 
 DbManager.prototype.voteItem = async function (teamId, user, itemName, score)
 {
     const sql = `CALL VoteItem("${teamId}", "${user}", "${itemName}", "${score}")`;
     await this.execute(sql);
-    this.isDirty = true;
 }
 
 DbManager.prototype.execute = async function (sql)
@@ -228,11 +190,6 @@ DbManager.prototype.createScoreList = function (id)
     return result;
 }
 
-DbManager.prototype.checkTeam = function (teamId)
-{
-    return ((this.team) && (this.team.id == teamId));
-}
-
 DbManager.prototype.userExists = function (user)
 {
 	return this.users.includes(user);
@@ -249,15 +206,6 @@ DbManager.prototype.sortItems = function ()
     {
         return (itemB.totalScore - itemA.totalScore);
     });
-}
-
-DbManager.prototype.getItemToVote = function ()
-{
-    var result = null;
-    if (this.itemsToVote && (this.itemsToVote.length > 0))
-        result = this.itemsToVote[0];
-
-    return result;
 }
 
 /*
