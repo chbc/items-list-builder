@@ -34,7 +34,6 @@ Controller.prototype.handleHomePage = async function (request, response)
 		
 		if (!resultPage)
 		{
-			this.dbManager.setDirty();
 			const teamName = await this.teamsManager.getTeamName(teamId);
 			resultPage = this.viewsManager.getLoginPage(teamName);
 		}

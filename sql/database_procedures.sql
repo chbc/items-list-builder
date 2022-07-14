@@ -2,14 +2,15 @@ USE coop_items_db;
 
 DELIMITER //
 DROP PROCEDURE IF EXISTS GetItemsToVote //
-CREATE PROCEDURE GetItemsToVote(arg_teamId VARCHAR(4), arg_userName VARCHAR(20))
+DROP PROCEDURE IF EXISTS GetItemToVote //
+CREATE PROCEDURE GetItemToVote(arg_teamId VARCHAR(4), arg_userName VARCHAR(20))
 BEGIN
 SELECT name FROM items a JOIN
 (
 	SELECT a.scoreListId FROM
 	(SELECT DISTINCT scoreListId FROM scores WHERE teamId = arg_teamId) a LEFT JOIN
 	(SELECT DISTINCT scoreListId FROM scores WHERE userName = arg_userName AND teamId = arg_teamId) b ON a.scoreListId = b.scoreListId
-	WHERE b.scoreListId IS NULL
+	WHERE b.scoreListId IS NULL LIMIT 1
 ) b ON a.scoreListId = b.scoreListId;
 END //
 
@@ -68,7 +69,7 @@ END //
 
 # CALL VoteItem("123", "Henrique", "Steppenwolf - Born To Be Wild", 1);
 # CALL AddItem("123", "Matheus", "Steppenwolf - Born To Be Wild");
-# CALL GetItemsToVote("123","Matheus");
+# CALL GetItemToVote("123","Dodô");
 # CALL GetItems("123");
 # CALL GetUsers("123");
 # CALL GetItems("123");

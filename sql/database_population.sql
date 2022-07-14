@@ -55,6 +55,4 @@ INSERT INTO items (name, teamId, scoreListId) VALUES
 ("Oasis - Don't Look Back In Anger", '123', 21),
 ('The Strokes - Reptilla', '123', 22),
 ('Millencolin - No Cigar', '123', 23),
-('Silverchair - Freak', '123', 23);
-
-SELECT table_schema, SUM((data_length+index_length)/1024) AS "Size in Kb" FROM information_schema.tables GROUP BY table_schema;
+('Silverchair - Freak', '123', 24);
