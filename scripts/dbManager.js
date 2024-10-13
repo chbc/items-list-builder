@@ -46,13 +46,11 @@ var DbManager = function()
     ];
 */
 
-    // const LOCAL_URL = 'mysql://henrique:henrique@localhost:3306/coop_items_db';
-
     this.CONNECTION_LIMIT = 20;
-    this.HOST = process.env.HOST ? process.env.HOST : 'localhost';
-    this.USER = process.env.USER ? process.env.USER : 'henrique';
-    this.PASSWORD = process.env.PASSWORD ? process.env.PASSWORD : 'henrique';
-    this.DATABASE = process.env.DATABASE ? process.env.DATABASE : 'coop_items_db';
+    this.HOST = process.env.HOST;
+    this.USER = process.env.USER;
+    this.PASSWORD = process.env.PASSWORD;
+    this.DATABASE = process.env.DATABASE;
 
     this.pool = null;
 }

@@ -15,35 +15,43 @@ var Controller = function()
 
 Controller.prototype.handleHomePage = async function (request, response)
 {
-	var resultPage = null;
 	var user = null;
-
 	var teamId = this.teamsManager.getTeamIdFromRequest(request, response);
-	if (teamId)
+
+	if (!teamId)
 	{
-		user = request.cookies['user'];
-		if (user)
-		{
-			const userExists = await this.usersManager.userExists(teamId, user);
-			if (userExists)
-			{
-				var homeData = await this.dbManager.getHomeData(user, teamId);
-				resultPage = this.viewsManager.getHomePage(user, homeData.itemToVote, homeData.allUsers, homeData.allItems);
-			}
-		}
-		
-		if (!resultPage)
-		{
-			const teamName = await this.teamsManager.getTeamName(teamId);
-			resultPage = this.viewsManager.getLoginPage(teamName);
-		}
-	}
-	else
-	{
-		resultPage = this.viewsManager.getErrorPage('Equipe não existe!');
+		return this.viewsManager.getErrorPage('Equipe não existe!');
 	}
 
-	return resultPage;
+	user = request.cookies['user'];
+	var hasUserCookie = true;
+	if (!user)
+	{
+		hasUserCookie = false;
+		user = request.query.user;
+	}
+
+	if (user)
+	{
+		const userExists = await this.usersManager.userExists(teamId, user);
+		if (userExists)
+		{
+			if (!hasUserCookie)
+			{
+				response.cookie('user', user);
+			}
+
+			var homeData = await this.dbManager.getHomeData(user, teamId);
+			return this.viewsManager.getHomePage(user, homeData.itemToVote, homeData.allUsers, homeData.allItems);
+		}
+	}
+
+	return this.viewsManager.getErrorPage('Usuario não existe!');
+	
+	/*
+	const teamName = await this.teamsManager.getTeamName(teamId);
+	return this.viewsManager.getLoginPage(teamName);
+	*/
 }
 
 Controller.prototype.addUserIfNotExists = async function (request, response)
